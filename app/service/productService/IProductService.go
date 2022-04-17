@@ -7,6 +7,6 @@ type IProductService interface {
 	FindByID(id string) (productModel.Product, error)
 	Create(product productModel.Product) (productModel.Product, error)
 	Update(id string, product productModel.Product) (productModel.Product, error)
-	// UpdateV2(id, string, product productModel.Product) (productModel.Product, error)
+	UpdateV2(product productModel.Product) (productModel.Product, error)
 	Delete(id string) (productModel.Product, error)
 }

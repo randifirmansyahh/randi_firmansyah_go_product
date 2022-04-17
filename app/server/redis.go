@@ -9,7 +9,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func ConnectToRedis() *redis.Client {
+func connectToRedis() *redis.Client {
 	// insialisasi Koneksi
 	redis := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_HOST"),                   // hostname

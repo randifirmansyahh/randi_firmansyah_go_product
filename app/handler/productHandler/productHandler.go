@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"randi_firmansyah/app/helper/redisHelper"
-	res "randi_firmansyah/app/helper/response"
+	"randi_firmansyah/app/helper/response"
 	"randi_firmansyah/app/models/productModel"
 	"randi_firmansyah/app/service"
 
@@ -16,6 +16,11 @@ var (
 	key_redis   = "list_product_randi"
 	HandlerName = "Product"
 	paramName   = "id"
+	read        = "read"
+	create      = "create"
+	update      = "update"
+	delete      = "delete"
+	detail      = "detail"
 )
 
 type productHandler struct {
@@ -31,7 +36,7 @@ func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request)
 	// check redis with get response
 	go func() {
 		if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
-			res.ResponseSuccess(w, "r", HandlerName, data)
+			response.ResponseSuccess(w, read, HandlerName, data)
 			return
 		}
 	}()
@@ -39,12 +44,12 @@ func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request)
 	// select ke service
 	listProduct, err := h.service.IProductService.FindAll()
 	if err != nil {
-		res.ResponseInternalServerError(w)
+		response.ResponseInternalServerError(w)
 		return
 	}
 
 	// success response
-	res.ResponseSuccess(w, "r", HandlerName, listProduct)
+	response.ResponseSuccess(w, read, HandlerName, listProduct)
 }
 
 func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +59,7 @@ func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) 
 	// get one data from redis
 	go func() {
 		if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
-			res.ResponseSuccess(w, "r", HandlerName, result)
+			response.ResponseSuccess(w, detail, HandlerName, result)
 			return
 		}
 	}()
@@ -62,12 +67,12 @@ func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) 
 	// select ke service
 	cari, err := h.service.IProductService.FindByID(id)
 	if err != nil {
-		res.ResponseBadRequest(w)
+		response.ResponseBadRequest(w)
 		return
 	}
 
 	// success response
-	res.ResponseSuccess(w, "r", HandlerName, cari)
+	response.ResponseSuccess(w, detail, HandlerName, cari)
 }
 
 func (h *productHandler) PostProduct(w http.ResponseWriter, r *http.Request) {
@@ -75,14 +80,14 @@ func (h *productHandler) PostProduct(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var datarequest productModel.Product
 	if err := decoder.Decode(&datarequest); err != nil {
-		res.ResponseInternalServerError(w)
+		response.ResponseInternalServerError(w)
 		return
 	}
 
 	// insert
-	create, err := h.service.IProductService.Create(datarequest)
+	created, err := h.service.IProductService.Create(datarequest)
 	if err != nil {
-		res.ResponseInternalServerError(w)
+		response.ResponseInternalServerError(w)
 		return
 	}
 
@@ -92,7 +97,7 @@ func (h *productHandler) PostProduct(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// response success
-	res.ResponseSuccess(w, "c", HandlerName, create)
+	response.ResponseSuccess(w, create, HandlerName, created)
 }
 
 func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -103,14 +108,14 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var datarequest productModel.Product
 	if err := decoder.Decode(&datarequest); err != nil {
-		res.ResponseBadRequest(w)
+		response.ResponseBadRequest(w)
 		return
 	}
 
 	// update
 	updated, err := h.service.IProductService.Update(id, datarequest)
 	if err != nil {
-		res.ResponseInternalServerError(w)
+		response.ResponseInternalServerError(w)
 		return
 	}
 
@@ -120,7 +125,7 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// response success
-	res.ResponseSuccess(w, "u", HandlerName, updated)
+	response.ResponseSuccess(w, update, HandlerName, updated)
 }
 
 func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +135,7 @@ func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	// delete
 	deleted, err := h.service.IProductService.Delete(id)
 	if err != nil {
-		res.ResponseBadRequest(w)
+		response.ResponseBadRequest(w)
 		return
 	}
 
@@ -139,5 +144,5 @@ func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		redisHelper.ClearRedis(h.redis, key_redis)
 	}()
 
-	res.ResponseSuccess(w, "d", HandlerName, deleted)
+	response.ResponseSuccess(w, delete, HandlerName, deleted)
 }

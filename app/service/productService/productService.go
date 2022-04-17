@@ -73,16 +73,6 @@ func (s *service) Delete(id string) (productModel.Product, error) {
 	return s.repository.IProductRepository.Delete(cari)
 }
 
-// func (s *service) UpdateV2(id string, product productModel.Product) (productModel.Product, error) {
-// 	return s.repository.IProductRepository.UpdateV2(product)
-// }
-
-// func (s *service) Delete(id string) (productModel.Product, error) {
-// 	// search data by id
-// 	data, err := s.repository.IProductRepository.FindByID(id)
-// 	if err != nil {
-// 		return data, err
-// 	}
-
-// 	return s.repository.IProductRepository.Delete(data)
-// }
+func (s *service) UpdateV2(product productModel.Product) (productModel.Product, error) {
+	return s.repository.IProductRepository.UpdateV2(product)
+}

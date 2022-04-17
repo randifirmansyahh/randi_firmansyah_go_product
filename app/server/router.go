@@ -3,11 +3,13 @@ package server
 import (
 	"log"
 	"net/http"
+	"os"
 	"randi_firmansyah/app/handler/loginHandler"
 	"randi_firmansyah/app/handler/productHandler"
 	"randi_firmansyah/app/handler/tokenHandler"
 	"randi_firmansyah/app/handler/userHandler"
 	"randi_firmansyah/app/helper/helper"
+	"randi_firmansyah/app/helper/response"
 	"randi_firmansyah/app/models/productModel"
 	"randi_firmansyah/app/models/userModel"
 	"randi_firmansyah/app/repository"
@@ -25,7 +27,7 @@ import (
 func Execute() {
 	// try connect to database
 	log.Println("Connecting to Database...")
-	db, err := gorm.Open(mysql.Open(GetConnectionString()), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(getConnectionString()), &gorm.Config{})
 	helper.CheckFatal(err)
 
 	// migrate model to database
@@ -40,7 +42,7 @@ func Execute() {
 
 	// try connect to redis
 	log.Println("Connecting to Redis in Background...")
-	redis := ConnectToRedis()
+	redis := connectToRedis()
 
 	// generate service
 	allServices := service.Service{
@@ -51,19 +53,27 @@ func Execute() {
 	// generate handler
 	product := productHandler.NewProductHandler(allServices, redis)
 	user := userHandler.NewUserHandler(allServices, redis)
+	login := loginHandler.NewLoginHandler(allServices)
 
 	// router
 	r := chi.NewRouter()
 
-	// global token
+	// check service
 	r.Group(func(g chi.Router) {
-		g.Get("/globaltoken", loginHandler.GenerateTokens)
+		g.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			response.ResponseRunningService(w)
+		})
 	})
 
-	// // login
-	// r.Group(func(l chi.Router) {
-	// 	l.Post("/login", loginHandler.Login)
-	// })
+	// global token
+	r.Group(func(g chi.Router) {
+		g.Get("/globaltoken", login.GenerateToken)
+	})
+
+	// login
+	r.Group(func(l chi.Router) {
+		l.Post("/login", login.Login)
+	})
 
 	// product
 	r.Group(func(p chi.Router) {
@@ -79,14 +89,16 @@ func Execute() {
 	r.Group(func(u chi.Router) {
 		u.Use(tokenHandler.GetToken) // pelindung token
 		u.Get("/user", user.GetSemuaUser)
-		// u.Get("/user/{id}", userHandler.GetUserById)
-		// u.Post("/user", userHandler.PostUser)
-		// u.Put("/user/{id}", userHandler.UpdateUser)
-		// u.Delete("/user/{id}", userHandler.DeleteUser)
+		u.Get("/user/{id}", user.GetUserByID)
+		u.Post("/user", user.PostUser)
+		u.Put("/user/{id}", user.UpdateUser)
+		u.Delete("/user/{id}", user.DeleteUser)
 	})
 
-	log.Println("Running Service")
-	if err := http.ListenAndServe(":5000", r); err != nil {
+	host := os.Getenv("APP_LOCAL_HOST")
+	port := os.Getenv("APP_LOCAL_PORT")
+	log.Println("Service running on " + host + ":" + port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Println("Error Starting Service")
 	}
 }

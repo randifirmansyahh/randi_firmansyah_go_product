@@ -2,7 +2,9 @@ package server
 
 import "os"
 
-func GetConnectionString() string {
+func getConnectionString() string {
 	dbName := os.Getenv("DB_DATABASE_NAME")
-	return "root:@tcp(127.0.0.1:3306)/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	return "root:@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
 }
