@@ -87,7 +87,7 @@ func (h *userHandler) PostUser(w http.ResponseWriter, r *http.Request) {
 	// insert
 	created, err := h.service.IUserService.Create(datarequest)
 	if err != nil {
-		response.ResponseInternalServerError(w)
+		response.Response(w, http.StatusBadRequest, "Username sudah digunakan", nil)
 		return
 	}
 

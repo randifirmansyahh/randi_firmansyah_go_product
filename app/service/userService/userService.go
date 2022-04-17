@@ -44,6 +44,12 @@ func (s *service) FindByUsername(username string) (userModel.User, error) {
 }
 
 func (s *service) Create(user userModel.User) (userModel.User, error) {
+	// check username if exist
+
+	if _, err := s.repository.IUserRepository.FindByUsername(user.Username); err == nil {
+		return userModel.User{}, errors.New("username already exist")
+	}
+
 	newPassword := helper.Encode([]byte(user.Password))
 	user.Password = string(newPassword)
 	return s.repository.IUserRepository.Create(user)
