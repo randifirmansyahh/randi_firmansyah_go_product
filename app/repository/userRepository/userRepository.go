@@ -26,6 +26,12 @@ func (r *repository) FindByID(ID int) (userModel.User, error) {
 	return user, err
 }
 
+func (r *repository) FindByUsername(username string) (userModel.User, error) {
+	var user userModel.User
+	err := r.db.First(&user, "username = ?", username).Error
+	return user, err
+}
+
 func (r *repository) Create(user userModel.User) (userModel.User, error) {
 	err := r.db.Create(&user).Error
 	return user, err

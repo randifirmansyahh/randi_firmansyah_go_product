@@ -34,13 +34,18 @@ func (s *service) FindByID(id string) (userModel.User, error) {
 	return s.repository.IUserRepository.FindByID(newId)
 }
 
-func (s *service) Create(user userModel.User) (userModel.User, error) {
-	newPassword, err := helper.HashPassword(user.Password)
-	if err != nil {
-		return userModel.User{}, err
+func (s *service) FindByUsername(username string) (userModel.User, error) {
+	// check id
+	if username == "" {
+		return userModel.User{}, errors.New("id is empty")
 	}
 
-	user.Password = newPassword
+	return s.repository.IUserRepository.FindByUsername(username)
+}
+
+func (s *service) Create(user userModel.User) (userModel.User, error) {
+	newPassword := helper.Encode([]byte(user.Password))
+	user.Password = string(newPassword)
 	return s.repository.IUserRepository.Create(user)
 }
 

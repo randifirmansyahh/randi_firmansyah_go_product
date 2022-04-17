@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
@@ -9,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 func CheckEnv(err error) {
@@ -19,9 +18,32 @@ func CheckEnv(err error) {
 	}
 }
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
+const alphabet = "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+var bcEncoding = base64.NewEncoding(alphabet)
+
+func Encode(src []byte) []byte {
+	n := bcEncoding.EncodedLen(len(src))
+	dst := make([]byte, n)
+	bcEncoding.Encode(dst, src)
+	for dst[n-1] == '=' {
+		n--
+	}
+	return dst[:n]
+}
+
+func Decode(src []byte) ([]byte, error) {
+	numOfEquals := 4 - (len(src) % 4)
+	for i := 0; i < numOfEquals; i++ {
+		src = append(src, '=')
+	}
+
+	dst := make([]byte, bcEncoding.DecodedLen(len(src)))
+	n, err := bcEncoding.Decode(dst, src)
+	if err != nil {
+		return nil, err
+	}
+	return dst[:n], nil
 }
 
 func UnMarshall(from string, to interface{}) {

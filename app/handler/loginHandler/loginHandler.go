@@ -2,7 +2,6 @@ package loginHandler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"randi_firmansyah/app/helper/helper"
 	"randi_firmansyah/app/helper/response"
@@ -41,18 +40,19 @@ func (l *loginHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// select ke db
-	newId := strconv.Itoa(datarequest.Id)
-	cari, err := l.service.IUserService.FindByID(newId)
+	cari, err := l.service.IUserService.FindByUsername(datarequest.Username)
 	if err != nil {
-		log.Println(err)
-		response.ResponseBadRequest(w)
+		response.Response(w, http.StatusOK, "Username tidak ditemukan", nil)
 		return
 	}
 
+	// hash password from request
+	newPassword := helper.Encode([]byte(datarequest.Password))
+	datarequest.Password = string(newPassword)
+
 	// bandingkan
-	if cari.Id != datarequest.Id || cari.Username != datarequest.Username {
-		log.Println(err)
-		response.ResponseBadRequest(w)
+	if cari.Username != datarequest.Username || cari.Password != datarequest.Password {
+		response.Response(w, http.StatusOK, "Password salah", nil)
 		return
 	}
 
