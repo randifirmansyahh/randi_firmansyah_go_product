@@ -14,8 +14,8 @@ Welcome!
 
 ```json
 {
-  "id": 1,
-  "username": "randi"
+  "username": "randi",
+  "password": "randi"
 }
 ```
 
@@ -64,6 +64,7 @@ Welcome!
 ```json
 {
   "nama": "Ice Cream",
+  "category_id": 1,
   "harga": 20000,
   "qty": 12,
   "image": "https://1757140519.rsc.cdn77.org/blog/wp-content/uploads/2018/05/1-google-logo.png"
@@ -75,8 +76,55 @@ Welcome!
 ```json
 {
   "nama": "Ice Cream",
+  "category_id": 1,
   "harga": 20000,
   "qty": 12,
   "image": "https://1757140519.rsc.cdn77.org/blog/wp-content/uploads/2018/05/1-google-logo.png"
+}
+```
+
+# Cart (Login Required)
+
+- GET http://localhost:5000/cart
+- GET http://localhost:5000/cart/{id}
+- DELETE http://localhost:5000/cart/{id}
+- PUT http://localhost:5000/cart/{id}
+
+```json
+{
+  "user_id": 1,
+  "product_id": 1,
+  "qty": 1
+}
+```
+
+- POST http://localhost:5000/cart
+
+```json
+{
+  "user_id": 1,
+  "product_id": 1,
+  "qty": 1
+}
+```
+
+# Category (Login Required)
+
+- GET http://localhost:5000/category
+- GET http://localhost:5000/category/{id}
+- DELETE http://localhost:5000/category/{id}
+- PUT http://localhost:5000/category/{id}
+
+```json
+{
+  "nama": "teknology dan elektronik"
+}
+```
+
+- POST http://localhost:5000/category
+
+```json
+{
+  "nama": "teknology dan elektronik"
 }
 ```

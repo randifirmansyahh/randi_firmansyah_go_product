@@ -17,7 +17,7 @@ var (
 	ISS            = tokenHelper.ISS
 	LOGIN_SECRET   = tokenHelper.LOGIN_SECRET
 	MESSAGE        = "Unathorized!"
-	MESSAGE_KOSONG = "Requst authorize kosong"
+	MESSAGE_KOSONG = "Request authorize kosong"
 )
 
 func GetToken(f http.Handler) http.Handler {

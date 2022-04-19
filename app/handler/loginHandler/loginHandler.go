@@ -35,7 +35,7 @@ func (l *loginHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// fill to model
 	var datarequest userModel.User
 	if err := decoder.Decode(&datarequest); err != nil {
-		response.ResponseBadRequest(w)
+		response.Response(w, http.StatusBadRequest, "Gagal login", nil)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (l *loginHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// cek jika generate gagal
 	if err != nil {
-		response.ResponseInternalServerError(w)
+		response.Response(w, http.StatusInternalServerError, "Gagal login", nil)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (l *loginHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var tokensMaps tokenModel.Token
 	tokensMaps.FullToken = token
 
-	response.ResponTokenSucces(w, tokensMaps)
+	response.Response(w, http.StatusOK, "Login berhasil", tokensMaps)
 }
 
 func (l *loginHandler) GenerateToken(w http.ResponseWriter, r *http.Request) {
@@ -89,12 +89,12 @@ func (l *loginHandler) GenerateToken(w http.ResponseWriter, r *http.Request) {
 
 	// cek jika generate gagal
 	if err != nil {
-		response.ResponseInternalServerError(w)
+		response.Response(w, http.StatusInternalServerError, "Gagal login", nil)
 		return
 	}
 
 	// masukin ke model, kirim respon
 	var tokensMaps tokenModel.Token
 	tokensMaps.FullToken = token
-	response.ResponTokenSucces(w, tokensMaps)
+	response.Response(w, http.StatusOK, "Login berhasil", tokensMaps)
 }

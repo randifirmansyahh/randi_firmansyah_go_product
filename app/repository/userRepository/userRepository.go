@@ -20,9 +20,9 @@ func (r *repository) FindAll() ([]userModel.User, error) {
 	return users, err
 }
 
-func (r *repository) FindByID(ID int) (userModel.User, error) {
+func (r *repository) FindByID(id int) (userModel.User, error) {
 	var user userModel.User
-	err := r.db.First(&user, ID).Error
+	err := r.db.First(&user, id).Error
 	return user, err
 }
 

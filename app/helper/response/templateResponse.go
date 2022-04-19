@@ -5,11 +5,9 @@ import "net/http"
 var (
 	success               = "SUCCESS"
 	bad_request           = "BAD REQUEST"
-	internal_server_error = "INTERNAL SERVER ERROR"
+	Internal_server_error = "INTERNAL SERVER ERROR"
 	not_found             = "NOT FOUND"
 	unknown               = "UNKNOWN"
-	unauthorize           = "UNAUTHORIZE"
-	tokencreated          = "TOKEN CREATED"
 	service_running       = "SERVICE RUNNING"
 )
 
@@ -19,44 +17,45 @@ func cekStatus(code int) string {
 	} else if code == http.StatusBadRequest {
 		return bad_request
 	} else if code == http.StatusInternalServerError {
-		return internal_server_error
+		return Internal_server_error
+	} else if code == http.StatusNotFound {
+		return not_found
 	} else {
 		return unknown
 	}
 }
 
-func cekForMassage(c, h string) string {
-	if c == "create" {
-		return msgTambah(h)
-	} else if c == "read" {
-		return msgGetData(h)
-	} else if c == "update" {
-		return msgUpdate(h)
-	} else if c == "delete" {
-		return msgHapus(h)
-	} else if c == "detail" {
-		return msgGetDetail(h)
-	} else {
-		return "Berhasil"
+func MsgGetAll(exist bool, model string) string {
+	if exist {
+		return "Berhasil mengambil semua data " + model
 	}
+	return "Gagal mengambil semua data " + model
 }
 
-func msgTambah(model string) string {
-	return "Berhasil menambahkan data " + model
+func MsgGetDetail(exist bool, model string) string {
+	if exist {
+		return "Berhasil mengambil detail data " + model
+	}
+	return "Detail data " + model + " tidak ditemukan"
 }
 
-func msgGetData(model string) string {
-	return "Berhasil mengambil data " + model
+func MsgCreate(exist bool, model string) string {
+	if exist {
+		return "Berhasil menambahkan data " + model
+	}
+	return "Gagal menambahkan data " + model
 }
 
-func msgGetDetail(model string) string {
-	return "Berhasil mengambil detail data " + model
+func MsgUpdate(exist bool, model string) string {
+	if exist {
+		return "Berhasil mengupdate data " + model
+	}
+	return "Gagal mengupdate data " + model
 }
 
-func msgUpdate(model string) string {
-	return "Berhasil mengupdate data " + model
-}
-
-func msgHapus(model string) string {
-	return "Berhasil menghapus data " + model
+func MsgDelete(exist bool, model string) string {
+	if exist {
+		return "Berhasil menghapus data " + model
+	}
+	return "Gagal menghapus data " + model
 }

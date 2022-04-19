@@ -16,13 +16,13 @@ func NewRepository(db *gorm.DB) IProductRepository {
 
 func (r *repository) FindAll() ([]productModel.Product, error) {
 	var products []productModel.Product
-	err := r.db.Find(&products).Error
+	err := r.db.Joins("Category").Find(&products).Error
 	return products, err
 }
 
 func (r *repository) FindByID(ID int) (productModel.Product, error) {
 	var product productModel.Product
-	err := r.db.First(&product, ID).Error
+	err := r.db.Joins("Category").First(&product, ID).Error
 	return product, err
 }
 

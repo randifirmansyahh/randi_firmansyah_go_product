@@ -1,4 +1,4 @@
-package productHandler
+package categoryHandler
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"randi_firmansyah/app/helper/redisHelper"
 	"randi_firmansyah/app/helper/requestHelper"
 	"randi_firmansyah/app/helper/response"
-	"randi_firmansyah/app/models/productModel"
+	"randi_firmansyah/app/models/categoryModel"
 	"randi_firmansyah/app/service"
 
 	"github.com/go-chi/chi"
@@ -14,21 +14,21 @@ import (
 )
 
 var (
-	key_redis   = "list_product_randi"
-	HandlerName = "product"
+	key_redis   = "list_category_randi"
+	HandlerName = "category"
 	paramName   = "id"
 )
 
-type productHandler struct {
+type categoryHandler struct {
 	service service.Service
 	redis   *redis.Client
 }
 
-func NewProductHandler(productService service.Service, redis *redis.Client) *productHandler {
-	return &productHandler{productService, redis}
+func NewCategoryHandler(categoryService service.Service, redis *redis.Client) *categoryHandler {
+	return &categoryHandler{categoryService, redis}
 }
 
-func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request) {
+func (h *categoryHandler) GetSemuaCategory(w http.ResponseWriter, r *http.Request) {
 	// check redis with get response
 	go func() {
 		if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
@@ -38,31 +38,17 @@ func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request)
 	}()
 
 	// select ke service
-	listProduct, err := h.service.IProductService.FindAll()
+	listCategory, err := h.service.ICategoryService.FindAll()
 	if err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgGetAll(false, HandlerName), nil)
 		return
 	}
 
-	// convert product to product response
-	var newListProduct []productModel.ProductResponse
-	for _, product := range listProduct {
-		newListProduct = append(newListProduct, productModel.ProductResponse{
-			Id:             product.Id,
-			Category_Id:    product.Category_Id,
-			Nama:           product.Nama,
-			Harga:          product.Harga,
-			Qty:            product.Qty,
-			Image:          product.Image,
-			DateAuditModel: product.DateAuditModel,
-		})
-	}
-
 	// success response
-	response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), newListProduct)
+	response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), listCategory)
 }
 
-func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) {
+func (h *categoryHandler) GetCategoryByID(w http.ResponseWriter, r *http.Request) {
 	// ambil parameter
 	id := chi.URLParam(r, paramName)
 
@@ -82,38 +68,27 @@ func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) 
 	}()
 
 	// select ke service
-	cari, err := h.service.IProductService.FindByID(newId)
+	cari, err := h.service.ICategoryService.FindByID(newId)
 	if err != nil {
 		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
 		return
 	}
 
-	// convert product to product response
-	newCari := productModel.ProductResponse{
-		Id:             cari.Id,
-		Category_Id:    cari.Category_Id,
-		Nama:           cari.Nama,
-		Harga:          cari.Harga,
-		Qty:            cari.Qty,
-		Image:          cari.Image,
-		DateAuditModel: cari.DateAuditModel,
-	}
-
 	// success response
-	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), newCari)
+	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), cari)
 }
 
-func (h *productHandler) PostProduct(w http.ResponseWriter, r *http.Request) {
+func (h *categoryHandler) PostCategory(w http.ResponseWriter, r *http.Request) {
 	// decode and fill to model
 	decoder := json.NewDecoder(r.Body)
-	var datarequest productModel.Product
+	var datarequest categoryModel.Category
 	if err := decoder.Decode(&datarequest); err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgCreate(false, HandlerName), nil)
 		return
 	}
 
 	// insert
-	created, err := h.service.IProductService.Create(datarequest)
+	created, err := h.service.ICategoryService.Create(datarequest)
 	if err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgCreate(false, HandlerName), nil)
 		return
@@ -128,13 +103,13 @@ func (h *productHandler) PostProduct(w http.ResponseWriter, r *http.Request) {
 	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), created)
 }
 
-func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+func (h *categoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	// ambil parameter
 	id := chi.URLParam(r, paramName)
 
 	// decode and fill to model
 	decoder := json.NewDecoder(r.Body)
-	var datarequest productModel.Product
+	var datarequest categoryModel.Category
 	if err := decoder.Decode(&datarequest); err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgUpdate(false, HandlerName), nil)
 		return
@@ -148,13 +123,13 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// cari data
-	if _, err := h.service.IProductService.FindByID(newId); err != nil {
+	if _, err := h.service.ICategoryService.FindByID(newId); err != nil {
 		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
 		return
 	}
 
 	// update
-	updated, err := h.service.IProductService.Update(newId, datarequest)
+	updated, err := h.service.ICategoryService.Update(newId, datarequest)
 	if err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgUpdate(false, HandlerName), nil)
 		return
@@ -169,7 +144,7 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), updated)
 }
 
-func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+func (h *categoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	// ambil parameter
 	id := chi.URLParam(r, paramName)
 
@@ -181,14 +156,14 @@ func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// cari data
-	cari, err := h.service.IProductService.FindByID(newId)
+	cari, err := h.service.ICategoryService.FindByID(newId)
 	if err != nil {
 		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
 		return
 	}
 
 	// delete
-	deleted, err := h.service.IProductService.Delete(cari)
+	deleted, err := h.service.ICategoryService.Delete(cari)
 	if err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgDelete(false, HandlerName), nil)
 		return
