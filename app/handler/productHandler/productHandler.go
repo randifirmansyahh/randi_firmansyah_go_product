@@ -30,12 +30,11 @@ func NewProductHandler(productService service.Service, redis *redis.Client) *pro
 
 func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request) {
 	// check redis with get response
-	go func() {
-		if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
-			response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), data)
-			return
-		}
-	}()
+
+	if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
+		response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), data)
+		return
+	}
 
 	// select ke service
 	listProduct, err := h.service.IProductService.FindAll()
@@ -74,12 +73,10 @@ func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// get one data from redis
-	go func() {
-		if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
-			response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
-			return
-		}
-	}()
+	if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
+		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+		return
+	}
 
 	// select ke service
 	cari, err := h.service.IProductService.FindByID(newId)

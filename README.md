@@ -5,10 +5,19 @@
 Welcome!
 
 ## To run this project you can type text below on the terminal / bash :
+```cmd
+go run .
+```
 
-### go run .
+# E-Commerce Service for
+- User
+- Roles
+- Product 
+- Category
+- Cart
+- Order
 
-# LOGIN
+## LOGIN
 
 - POST http://localhost:5000/login
 
@@ -19,11 +28,11 @@ Welcome!
 }
 ```
 
-# Generate token without login
+## Generate token without login
 
 - GET http://localhost:5000/globaltoken
 
-# USER (Login Required)
+## USER (Login Required)
 
 - GET http://localhost:5000/user
 - GET http://localhost:5000/user/{id}
@@ -54,7 +63,7 @@ Welcome!
 }
 ```
 
-# PRODUCT (Login Required)
+## PRODUCT (Login Required)
 
 - GET http://localhost:5000/product
 - GET http://localhost:5000/product/{id}
@@ -83,7 +92,7 @@ Welcome!
 }
 ```
 
-# Cart (Login Required)
+## Cart (Login Required)
 
 - GET http://localhost:5000/cart
 - GET http://localhost:5000/cart/{id}
@@ -108,7 +117,7 @@ Welcome!
 }
 ```
 
-# Category (Login Required)
+## Category (Login Required)
 
 - GET http://localhost:5000/category
 - GET http://localhost:5000/category/{id}
@@ -117,7 +126,7 @@ Welcome!
 
 ```json
 {
-  "nama": "teknology dan elektronik"
+  "name": "Teknology"
 }
 ```
 
@@ -125,6 +134,6 @@ Welcome!
 
 ```json
 {
-  "nama": "teknology dan elektronik"
+  "name": "Teknology dan Elektronik"
 }
 ```

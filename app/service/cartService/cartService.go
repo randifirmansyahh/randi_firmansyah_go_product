@@ -22,6 +22,13 @@ func (s *service) FindByID(id int) (cartModel.Cart, error) {
 }
 
 func (s *service) Create(Cart cartModel.Cart) (cartModel.CartResponse, error) {
+	findProduct, err := s.repository.IProductRepository.FindByID(Cart.Product_Id)
+	if err != nil {
+		return cartModel.CartResponse{}, err
+	}
+
+	Cart.Total = findProduct.Harga * Cart.Qty
+
 	newCart, err := s.repository.ICartRepository.Create(Cart)
 	if err != nil {
 		return cartModel.CartResponse{}, err

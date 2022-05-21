@@ -14,6 +14,7 @@ import (
 	"randi_firmansyah/app/helper/response"
 	"randi_firmansyah/app/models/cartModel"
 	"randi_firmansyah/app/models/categoryModel"
+	"randi_firmansyah/app/models/orderModel"
 	"randi_firmansyah/app/models/productModel"
 	"randi_firmansyah/app/models/userModel"
 	"randi_firmansyah/app/repository"
@@ -39,7 +40,7 @@ func Execute() {
 	helper.CheckFatal(err)
 
 	// migrate model to database
-	db.AutoMigrate(&productModel.Product{}, &userModel.User{}, &cartModel.Cart{}, &categoryModel.Category{})
+	db.AutoMigrate(&productModel.Product{}, &userModel.User{}, &cartModel.Cart{}, &categoryModel.Category{}, &orderModel.Order{})
 	log.Println("Database Connected")
 
 	// generate repository

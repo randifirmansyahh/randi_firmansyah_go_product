@@ -30,12 +30,10 @@ func NewCartHandler(cartService service.Service, redis *redis.Client) *cartHandl
 
 func (h *cartHandler) GetSemuaCart(w http.ResponseWriter, r *http.Request) {
 	// check redis with get response
-	go func() {
-		if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
-			response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), data)
-			return
-		}
-	}()
+	if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
+		response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), data)
+		return
+	}
 
 	// select ke service
 	listCart, err := h.service.ICartService.FindAll()
@@ -73,12 +71,10 @@ func (h *cartHandler) GetCartByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get one data from redis
-	go func() {
-		if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
-			response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
-			return
-		}
-	}()
+	if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
+		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+		return
+	}
 
 	// select ke service
 	cari, err := h.service.ICartService.FindByID(newId)

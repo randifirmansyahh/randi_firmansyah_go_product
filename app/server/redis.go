@@ -20,15 +20,13 @@ func connectToRedis() *redis.Client {
 	ctx := context.Background()
 
 	// cek redis asynchronous
-	go func() {
-		msg, err := redis.Ping(ctx).Result() // Test koneksi Redis nya (nyala atau engga)
-		if err != nil || msg != "PONG" {
-			log.Println("not conect error =>", err)
-			log.Println("Redis Not Connected !!")
-		} else {
-			log.Println("Redis Connected")
-		}
-	}()
+	msg, err := redis.Ping(ctx).Result() // Test koneksi Redis nya (nyala atau engga)
+	if err != nil || msg != "PONG" {
+		log.Println("not conect error =>", err)
+		log.Println("Redis Not Connected !!")
+	} else {
+		log.Println("Redis Connected")
+	}
 
 	return redis
 }
