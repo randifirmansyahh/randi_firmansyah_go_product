@@ -10,6 +10,7 @@ import (
 	"randi_firmansyah/app/service"
 
 	"github.com/go-chi/chi"
+	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -26,6 +27,27 @@ type userHandler struct {
 
 func NewUserHandler(userService service.Service, redis *redis.Client) *userHandler {
 	return &userHandler{userService, redis}
+}
+
+func (h *userHandler) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
+	// ambil parameter
+	username := chi.URLParam(r, paramName)
+
+	// get one data from redis
+	if result, err := redisHelper.GetOneRedisData(username, key_redis, h.redis); err == nil {
+		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+		return
+	}
+
+	// select ke service
+	cari, err := h.service.IUserService.FindByUsername(username)
+	if err != nil {
+		response.Response(w, http.StatusNotFound, "Data dengan username tersebut tidak ditemukan", nil)
+		return
+	}
+
+	// success response
+	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), cari)
 }
 
 func (h *userHandler) GetSemuaUser(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +102,16 @@ func (h *userHandler) PostUser(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&datarequest); err != nil {
 		response.Response(w, http.StatusBadRequest, "Data harus berupa json / request kurang lengkap", nil)
 		return
+	}
+
+	validate := validator.New()
+	err := validate.Struct(datarequest)
+	if err != nil {
+		errors := err.(validator.ValidationErrors)
+		if errors != nil {
+			response.Response(w, http.StatusBadRequest, errors.Error(), nil)
+			return
+		}
 	}
 
 	// insert

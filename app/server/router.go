@@ -6,7 +6,6 @@ import (
 	"os"
 	"randi_firmansyah/app/handler/cartHandler"
 	"randi_firmansyah/app/handler/categoryHandler"
-	"randi_firmansyah/app/handler/loginHandler"
 	"randi_firmansyah/app/handler/productHandler"
 	"randi_firmansyah/app/handler/tokenHandler"
 	"randi_firmansyah/app/handler/userHandler"
@@ -66,7 +65,7 @@ func Execute() {
 	// generate handler
 	product := productHandler.NewProductHandler(allServices, redis)
 	user := userHandler.NewUserHandler(allServices, redis)
-	login := loginHandler.NewLoginHandler(allServices)
+	// login := loginHandler.NewLoginHandler(allServices)
 	cart := cartHandler.NewCartHandler(allServices, redis)
 	category := categoryHandler.NewCategoryHandler(allServices, redis)
 
@@ -75,20 +74,20 @@ func Execute() {
 
 	// check service
 	r.Group(func(g chi.Router) {
-		g.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		g.Get("/check", func(w http.ResponseWriter, r *http.Request) {
 			response.ResponseRunningService(w)
 		})
 	})
 
-	// global token
-	r.Group(func(g chi.Router) {
-		g.Get("/globaltoken", login.GenerateToken)
-	})
+	// // global token
+	// r.Group(func(g chi.Router) {
+	// 	g.Get("/globaltoken", login.GenerateToken)
+	// })
 
-	// login
-	r.Group(func(l chi.Router) {
-		l.Post("/login", login.Login)
-	})
+	// // login
+	// r.Group(func(l chi.Router) {
+	// 	l.Post("/login", login.Login)
+	// })
 
 	// product
 	r.Group(func(p chi.Router) {
@@ -103,8 +102,9 @@ func Execute() {
 	// user
 	r.Group(func(u chi.Router) {
 		u.Use(tokenHandler.GetToken) // pelindung token
-		u.Get("/user", user.GetSemuaUser)
-		u.Get("/user/{id}", user.GetUserByID)
+		// u.Get("/user", user.GetSemuaUser)
+		// u.Get("/user/{id}", user.GetUserByID)
+		u.Get("/user/{username}", user.GetUserByUsername)
 		u.Post("/user", user.PostUser)
 		u.Put("/user/{id}", user.UpdateUser)
 		u.Delete("/user/{id}", user.DeleteUser)
@@ -130,8 +130,8 @@ func Execute() {
 		c.Delete("/category/{id}", category.DeleteCategory)
 	})
 
-	host := os.Getenv("APP_LOCAL_HOST")
-	port := os.Getenv("APP_LOCAL_PORT")
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
 	log.Println("Service running on " + host + ":" + port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Println("Error Starting Service")
