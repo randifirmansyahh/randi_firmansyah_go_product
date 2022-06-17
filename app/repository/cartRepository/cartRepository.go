@@ -26,6 +26,12 @@ func (r *repository) FindByID(id int) (cartModel.Cart, error) {
 	return Cart, err
 }
 
+func (r *repository) FindByUserID(userId int) ([]cartModel.Cart, error) {
+	var Carts []cartModel.Cart
+	err := r.db.Joins("User").Joins("Product").Preload("Product.Category").Find(&Carts, "user_id = ?", userId).Error
+	return Carts, err
+}
+
 func (r *repository) Create(Cart cartModel.Cart) (cartModel.Cart, error) {
 	err := r.db.Create(&Cart).Error
 	return Cart, err

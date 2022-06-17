@@ -47,8 +47,8 @@ func (h *cartHandler) GetSemuaCart(w http.ResponseWriter, r *http.Request) {
 	for _, cart := range listCart {
 		newListCart = append(newListCart, cartModel.CartResponse{
 			Id:             cart.Id,
-			User_Id:        cart.User_Id,
-			Product_Id:     cart.Product_Id,
+			Username:       cart.User.Username,
+			Product:        cart.Product,
 			Qty:            cart.Qty,
 			Total:          cart.Total,
 			DateAuditModel: cart.DateAuditModel,
@@ -59,108 +59,141 @@ func (h *cartHandler) GetSemuaCart(w http.ResponseWriter, r *http.Request) {
 	response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), newListCart)
 }
 
-func (h *cartHandler) GetCartByID(w http.ResponseWriter, r *http.Request) {
+func (h *cartHandler) GetCartByUsername(w http.ResponseWriter, r *http.Request) {
 	// ambil parameter
-	id := chi.URLParam(r, paramName)
-
-	// check id
-	newId, err := requestHelper.CheckIDInt(id)
-	if err != nil {
-		response.Response(w, http.StatusBadRequest, response.MsgGetDetail(false, HandlerName), nil)
-		return
-	}
+	username := chi.URLParam(r, "username")
 
 	// get one data from redis
-	if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
-		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+	// if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
+	// 	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+	// 	return
+	// }
+
+	// find user
+	user, err := h.service.IUserService.FindByUsername(username)
+	if err != nil {
+		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, "username"), nil)
 		return
 	}
 
 	// select ke service
-	cari, err := h.service.ICartService.FindByID(newId)
+	cari, err := h.service.ICartService.FindByUserID(user.Id)
 	if err != nil {
-		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
+		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, "username"), nil)
 		return
 	}
 
 	// convert cart to cartResponse
-	newCart := cartModel.CartResponse{
-		Id:             cari.Id,
-		User_Id:        cari.User_Id,
-		Product_Id:     cari.Product_Id,
-		Qty:            cari.Qty,
-		Total:          cari.Total,
-		DateAuditModel: cari.DateAuditModel,
+	var cartRes []cartModel.CartResponse
+	for _, val := range cari {
+		cartRes = append(cartRes, cartModel.CartResponse{
+			Id:             val.Id,
+			Username:       val.User.Username,
+			Product:        val.Product,
+			Qty:            val.Qty,
+			Total:          val.Total,
+			DateAuditModel: val.DateAuditModel,
+		})
 	}
 
 	// success response
-	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), newCart)
+	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), cartRes)
 }
 
 func (h *cartHandler) PostCart(w http.ResponseWriter, r *http.Request) {
 	// decode and fill to model
 	decoder := json.NewDecoder(r.Body)
-	var datarequest cartModel.Cart
+	var datarequest cartModel.CartRequest
 	if err := decoder.Decode(&datarequest); err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgCreate(false, HandlerName), nil)
 		return
 	}
 
-	// insert
-	created, err := h.service.ICartService.Create(datarequest)
+	// find User
+	user, err := h.service.IUserService.FindByUsername(datarequest.Username)
 	if err != nil {
+		response.Response(w, http.StatusBadRequest, response.MsgGetDetail(false, "user"), nil)
+		return
+	}
+
+	// find product
+	product, err := h.service.IProductService.FindByID(datarequest.ProductId)
+	if err != nil {
+		response.Response(w, http.StatusBadRequest, response.MsgGetDetail(false, "product"), nil)
+		return
+	}
+
+	if datarequest.Qty > product.Qty {
+		response.Response(w, http.StatusBadRequest, "Order melebihi stock", nil)
+		return
+	}
+
+	// cartRequest to cartModel
+	cart := cartModel.Cart{
+		User_Id:    user.Id,
+		Product_Id: datarequest.ProductId,
+		Qty:        datarequest.Qty,
+		Total:      datarequest.Qty * product.Harga,
+	}
+
+	// insert
+	if _, err := h.service.ICartService.Create(cart); err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgCreate(false, HandlerName), nil)
 		return
 	}
 
 	// delete cache from redis by key
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), created)
+	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), nil)
 }
 
 func (h *cartHandler) UpdateCart(w http.ResponseWriter, r *http.Request) {
 	// ambil parameter
 	id := chi.URLParam(r, paramName)
+	qty := chi.URLParam(r, "qty")
 
-	// decode and fill to model
-	decoder := json.NewDecoder(r.Body)
-	var datarequest cartModel.Cart
-	if err := decoder.Decode(&datarequest); err != nil {
-		response.Response(w, http.StatusBadRequest, response.MsgUpdate(false, HandlerName), nil)
+	if id == "" {
+		response.Response(w, http.StatusBadRequest, "id tidak boleh kosong", nil)
+		return
+	}
+
+	if qty == "" {
+		response.Response(w, http.StatusBadRequest, "qty tidak boleh kosong", nil)
 		return
 	}
 
 	// cek id
 	newId, err := requestHelper.CheckIDInt(id)
 	if err != nil {
-		response.Response(w, http.StatusBadRequest, response.MsgUpdate(false, HandlerName), nil)
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	newQty, err := requestHelper.CheckIDInt(qty)
+	if err != nil {
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	// cari data
 	if _, err := h.service.ICartService.FindByID(newId); err != nil {
-		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
+		response.Response(w, http.StatusNotFound, "cart tidak ditemukan", nil)
 		return
 	}
 
 	// update
-	updated, err := h.service.ICartService.Update(newId, datarequest)
-	if err != nil {
-		response.Response(w, http.StatusInternalServerError, response.MsgUpdate(false, HandlerName), nil)
+	if err = h.service.ICartService.Update(newId, newQty); err != nil {
+		response.Response(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), updated)
+	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), nil)
 }
 
 func (h *cartHandler) DeleteCart(w http.ResponseWriter, r *http.Request) {
@@ -170,28 +203,25 @@ func (h *cartHandler) DeleteCart(w http.ResponseWriter, r *http.Request) {
 	// cek id
 	newId, err := requestHelper.CheckIDInt(id)
 	if err != nil {
-		response.Response(w, http.StatusBadRequest, response.MsgDelete(false, HandlerName), nil)
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	// cari data
 	cari, err := h.service.ICartService.FindByID(newId)
 	if err != nil {
-		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
+		response.Response(w, http.StatusNotFound, "cart tidak ditemukan", nil)
 		return
 	}
 
 	// delete
-	deleted, err := h.service.ICartService.Delete(cari)
-	if err != nil {
+	if _, err := h.service.ICartService.Delete(cari); err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgDelete(false, HandlerName), nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
-	response.Response(w, http.StatusOK, response.MsgDelete(true, HandlerName), deleted)
+	response.Response(w, http.StatusOK, response.MsgDelete(true, HandlerName), nil)
 }

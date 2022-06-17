@@ -18,12 +18,17 @@ type Cart struct {
 	modelHelper.DateAuditModel
 }
 
+type CartRequest struct {
+	Username  string `json:"username" validate:"required,min=3,max=50,alphanum"`
+	ProductId int    `json:"product_id" validate:"required,min=3,max=50,numeric"`
+	Qty       int    `json:"qty" validate:"required,min=1,numeric"`
+}
+
 type CartResponse struct {
-	Id          int  `json:"id"`
-	User_Id     int  `json:"user_id"`
-	Product_Id  int  `json:"product_id"`
-	Qty         int  `json:"qty"`
-	Total       int  `json:"total"`
-	OrderStatus bool `json:"order_status"`
+	Id       int                  `json:"id"`
+	Username string               `json:"username"`
+	Product  productModel.Product `json:"product"`
+	Qty      int                  `json:"qty"`
+	Total    int                  `json:"total"`
 	modelHelper.DateAuditModel
 }

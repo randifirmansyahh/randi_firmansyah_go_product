@@ -33,9 +33,9 @@ func (h *userHandler) GetUserByUsername(w http.ResponseWriter, r *http.Request) 
 	// ambil parameter
 	username := chi.URLParam(r, paramName)
 
-	// get one data from redis
-	if result, err := redisHelper.GetOneRedisData(username, key_redis, h.redis); err == nil {
-		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+	// check redis with get response
+	if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
+		response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), data)
 		return
 	}
 
@@ -79,10 +79,10 @@ func (h *userHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get one data from redis
-	if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
-		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
-		return
-	}
+	// if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
+	// 	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+	// 	return
+	// }
 
 	// select ke service
 	cari, err := h.service.IUserService.FindByID(newId)
@@ -114,31 +114,28 @@ func (h *userHandler) PostUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// insert
-	created, err := h.service.IUserService.Create(datarequest)
-	if err != nil {
+	// find username
+	if _, err := h.service.IUserService.FindByUsername(datarequest.Username); err == nil {
 		response.Response(w, http.StatusBadRequest, "Username sudah digunakan", nil)
 		return
 	}
 
+	// insert
+	if _, err := h.service.IUserService.Create(datarequest); err != nil {
+		response.Response(w, http.StatusBadRequest, response.Internal_server_error, nil)
+		return
+	}
+
 	// delete cache from redis by key
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), created)
+	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), nil)
 }
 
 func (h *userHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// ambil parameter
-	id := chi.URLParam(r, paramName)
-
-	// check id
-	newId, err := requestHelper.CheckIDInt(id)
-	if err != nil {
-		response.Response(w, http.StatusBadRequest, "ID harus berupa angka", nil)
-	}
+	username := chi.URLParam(r, "username")
 
 	// decode and fill to model
 	decoder := json.NewDecoder(r.Body)
@@ -148,20 +145,35 @@ func (h *userHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// update
-	updated, err := h.service.IUserService.Update(newId, datarequest)
+	// validate
+	validate := validator.New()
+	err := validate.Struct(datarequest)
 	if err != nil {
-		response.Response(w, http.StatusNotFound, "Data dengan ID tersebut tidak ditemukan", nil)
+		errors := err.(validator.ValidationErrors)
+		if errors != nil {
+			response.Response(w, http.StatusBadRequest, errors.Error(), nil)
+			return
+		}
+	}
+
+	// find
+	findUser, err := h.service.IUserService.FindByUsername(username)
+	if err != nil {
+		response.Response(w, http.StatusNotFound, err.Error(), nil)
+		return
+	}
+
+	// update
+	if _, err := h.service.IUserService.Update(findUser.Id, datarequest); err != nil {
+		response.Response(w, http.StatusNotFound, err.Error(), nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), updated)
+	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), nil)
 }
 
 func (h *userHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {

@@ -11,5 +11,5 @@ func CheckIDInt(id string) (int, error) {
 	if newId, err := strconv.Atoi(id); id != "" || err == nil {
 		return newId, nil
 	}
-	return 0, errors.New("failed")
+	return 0, errors.New("id must be int")
 }

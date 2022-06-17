@@ -7,3 +7,7 @@ type Category struct {
 	Nama string `json:"nama"`
 	modelHelper.DateAuditModel
 }
+
+type CategoryReq struct {
+	Nama string `json:"nama" validate:"required"`
+}

@@ -10,6 +10,7 @@ import (
 	"randi_firmansyah/app/service"
 
 	"github.com/go-chi/chi"
+	"github.com/go-playground/validator"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -58,10 +59,10 @@ func (h *categoryHandler) GetCategoryByID(w http.ResponseWriter, r *http.Request
 	}
 
 	// get one data from redis
-	if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
-		response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
-		return
-	}
+	// if result, err := redisHelper.GetOneRedisData(id, key_redis, h.redis); err == nil {
+	// 	response.Response(w, http.StatusOK, response.MsgGetDetail(true, HandlerName), result)
+	// 	return
+	// }
 
 	// select ke service
 	cari, err := h.service.ICategoryService.FindByID(newId)
@@ -77,26 +78,33 @@ func (h *categoryHandler) GetCategoryByID(w http.ResponseWriter, r *http.Request
 func (h *categoryHandler) PostCategory(w http.ResponseWriter, r *http.Request) {
 	// decode and fill to model
 	decoder := json.NewDecoder(r.Body)
-	var datarequest categoryModel.Category
+	var datarequest categoryModel.CategoryReq
 	if err := decoder.Decode(&datarequest); err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgCreate(false, HandlerName), nil)
 		return
 	}
 
+	// cek data
+	if err := h.CheckDatarequest(datarequest); err != nil {
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
 	// insert
-	created, err := h.service.ICategoryService.Create(datarequest)
-	if err != nil {
+	request := categoryModel.Category{
+		Nama: datarequest.Nama,
+	}
+
+	if _, err := h.service.ICategoryService.Create(request); err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgCreate(false, HandlerName), nil)
 		return
 	}
 
 	// delete cache from redis by key
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), created)
+	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), nil)
 }
 
 func (h *categoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +113,7 @@ func (h *categoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 
 	// decode and fill to model
 	decoder := json.NewDecoder(r.Body)
-	var datarequest categoryModel.Category
+	var datarequest categoryModel.CategoryReq
 	if err := decoder.Decode(&datarequest); err != nil {
 		response.Response(w, http.StatusBadRequest, response.MsgUpdate(false, HandlerName), nil)
 		return
@@ -118,26 +126,33 @@ func (h *categoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// cek data
+	if err := h.CheckDatarequest(datarequest); err != nil {
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
 	// cari data
 	if _, err := h.service.ICategoryService.FindByID(newId); err != nil {
 		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
 		return
 	}
 
+	request := categoryModel.Category{
+		Nama: datarequest.Nama,
+	}
+
 	// update
-	updated, err := h.service.ICategoryService.Update(newId, datarequest)
-	if err != nil {
+	if _, err := h.service.ICategoryService.Update(newId, request); err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgUpdate(false, HandlerName), nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), updated)
+	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), nil)
 }
 
 func (h *categoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
@@ -159,16 +174,23 @@ func (h *categoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 	}
 
 	// delete
-	deleted, err := h.service.ICategoryService.Delete(cari)
-	if err != nil {
-		response.Response(w, http.StatusBadRequest, response.MsgDelete(false, HandlerName), nil)
+	if _, err := h.service.ICategoryService.Delete(cari); err != nil {
+		response.Response(w, http.StatusBadRequest, "Tidak dapat menghapus kategori ini", nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
-	response.Response(w, http.StatusOK, response.MsgDelete(true, HandlerName), deleted)
+	response.Response(w, http.StatusOK, response.MsgDelete(true, HandlerName), nil)
+}
+
+func (s *categoryHandler) CheckDatarequest(datarequest categoryModel.CategoryReq) error {
+	validate := validator.New()
+	if err := validate.Struct(datarequest); err != nil {
+		if errors := err.(validator.ValidationErrors); errors != nil {
+			return errors
+		}
+	}
+	return nil
 }

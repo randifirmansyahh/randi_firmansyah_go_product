@@ -10,6 +10,7 @@ import (
 	"randi_firmansyah/app/service"
 
 	"github.com/go-chi/chi"
+	"github.com/go-playground/validator"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -30,7 +31,6 @@ func NewProductHandler(productService service.Service, redis *redis.Client) *pro
 
 func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request) {
 	// check redis with get response
-
 	if data, err := redisHelper.GetRedisData(key_redis, h.redis); err == nil {
 		response.Response(w, http.StatusOK, response.MsgGetAll(true, HandlerName), data)
 		return
@@ -48,7 +48,7 @@ func (h *productHandler) GetSemuaProduct(w http.ResponseWriter, r *http.Request)
 	for _, product := range listProduct {
 		newListProduct = append(newListProduct, productModel.ProductResponse{
 			Id:             product.Id,
-			Category_Id:    product.Category_Id,
+			Category:       product.Category,
 			Nama:           product.Nama,
 			Harga:          product.Harga,
 			Qty:            product.Qty,
@@ -88,7 +88,7 @@ func (h *productHandler) GetProductByID(w http.ResponseWriter, r *http.Request) 
 	// convert product to product response
 	newCari := productModel.ProductResponse{
 		Id:             cari.Id,
-		Category_Id:    cari.Category_Id,
+		Category:       cari.Category,
 		Nama:           cari.Nama,
 		Harga:          cari.Harga,
 		Qty:            cari.Qty,
@@ -109,20 +109,29 @@ func (h *productHandler) PostProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check validation
+	if err := h.CheckDatarequest(datarequest); err != nil {
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
+	// find category
+	if _, err := h.service.ICartService.FindByID(datarequest.Category_Id); err != nil {
+		response.Response(w, http.StatusBadRequest, "Category not found", nil)
+		return
+	}
+
 	// insert
-	created, err := h.service.IProductService.Create(datarequest)
-	if err != nil {
-		response.Response(w, http.StatusInternalServerError, response.MsgCreate(false, HandlerName), nil)
+	if _, err := h.service.IProductService.Create(datarequest); err != nil {
+		response.Response(w, http.StatusInternalServerError, err.Error(), nil)
 		return
 	}
 
 	// delete cache from redis by key
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), created)
+	response.Response(w, http.StatusOK, response.MsgCreate(true, HandlerName), nil)
 }
 
 func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
@@ -144,26 +153,35 @@ func (h *productHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check validation
+	if err := h.CheckDatarequest(datarequest); err != nil {
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
+
 	// cari data
 	if _, err := h.service.IProductService.FindByID(newId); err != nil {
-		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
+		response.Response(w, http.StatusNotFound, err.Error(), nil)
+		return
+	}
+
+	// find category
+	if _, err := h.service.ICategoryService.FindByID(datarequest.Category_Id); err != nil {
+		response.Response(w, http.StatusBadRequest, "Category not found", nil)
 		return
 	}
 
 	// update
-	updated, err := h.service.IProductService.Update(newId, datarequest)
-	if err != nil {
+	if _, err := h.service.IProductService.Update(newId, datarequest); err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgUpdate(false, HandlerName), nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
 	// response success
-	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), updated)
+	response.Response(w, http.StatusOK, response.MsgUpdate(true, HandlerName), nil)
 }
 
 func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -180,21 +198,28 @@ func (h *productHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	// cari data
 	cari, err := h.service.IProductService.FindByID(newId)
 	if err != nil {
-		response.Response(w, http.StatusNotFound, response.MsgGetDetail(false, HandlerName), nil)
+		response.Response(w, http.StatusNotFound, err.Error(), nil)
 		return
 	}
 
 	// delete
-	deleted, err := h.service.IProductService.Delete(cari)
-	if err != nil {
-		response.Response(w, http.StatusBadRequest, response.MsgDelete(false, HandlerName), nil)
+	if _, err := h.service.IProductService.Delete(cari); err != nil {
+		response.Response(w, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	// clear redis cache
-	go func() {
-		redisHelper.ClearRedis(h.redis, key_redis)
-	}()
+	go redisHelper.ClearRedis(h.redis, key_redis)
 
-	response.Response(w, http.StatusOK, response.MsgDelete(true, HandlerName), deleted)
+	response.Response(w, http.StatusOK, response.MsgDelete(true, HandlerName), nil)
+}
+
+func (s *productHandler) CheckDatarequest(datarequest productModel.Product) error {
+	validate := validator.New()
+	if err := validate.Struct(datarequest); err != nil {
+		if errors := err.(validator.ValidationErrors); errors != nil {
+			return errors
+		}
+	}
+	return nil
 }

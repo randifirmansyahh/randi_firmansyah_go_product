@@ -1,6 +1,7 @@
 package productService
 
 import (
+	"errors"
 	"randi_firmansyah/app/models/productModel"
 	"randi_firmansyah/app/repository"
 )
@@ -18,7 +19,11 @@ func (s *service) FindAll() ([]productModel.Product, error) {
 }
 
 func (s *service) FindByID(id int) (productModel.Product, error) {
-	return s.repository.IProductRepository.FindByID(id)
+	data, err := s.repository.IProductRepository.FindByID(id)
+	if err != nil {
+		return productModel.Product{}, errors.New("product tidak ditemukan")
+	}
+	return data, nil
 }
 
 func (s *service) Create(product productModel.Product) (productModel.ProductResponse, error) {
@@ -30,7 +35,7 @@ func (s *service) Create(product productModel.Product) (productModel.ProductResp
 
 	productResponse := productModel.ProductResponse{
 		Id:             newProduct.Id,
-		Category_Id:    newProduct.Category_Id,
+		Category:       newProduct.Category,
 		Nama:           newProduct.Nama,
 		Harga:          newProduct.Harga,
 		Qty:            newProduct.Qty,
@@ -50,7 +55,7 @@ func (s *service) Update(id int, product productModel.Product) (productModel.Pro
 
 	productResponse := productModel.ProductResponse{
 		Id:             newProduct.Id,
-		Category_Id:    newProduct.Category_Id,
+		Category:       newProduct.Category,
 		Nama:           newProduct.Nama,
 		Harga:          newProduct.Harga,
 		Qty:            newProduct.Qty,
@@ -64,12 +69,12 @@ func (s *service) Update(id int, product productModel.Product) (productModel.Pro
 func (s *service) Delete(data productModel.Product) (productModel.ProductResponse, error) {
 	newProduct, err := s.repository.IProductRepository.Delete(data)
 	if err != nil {
-		return productModel.ProductResponse{}, err
+		return productModel.ProductResponse{}, errors.New("product tidak dapat di hapus")
 	}
 
 	productResponse := productModel.ProductResponse{
 		Id:             newProduct.Id,
-		Category_Id:    newProduct.Category_Id,
+		Category:       newProduct.Category,
 		Nama:           newProduct.Nama,
 		Harga:          newProduct.Harga,
 		Qty:            newProduct.Qty,
