@@ -220,6 +220,24 @@ func (s *orderHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	findProduct, err := s.service.IProductService.FindByID(findOrder.Product_Id)
+	if err != nil {
+		response.Response(w, http.StatusNotFound, err.Error(), nil)
+		return
+	}
+
+	if findOrder.Qty > findProduct.Qty {
+		response.Response(w, http.StatusBadRequest, "Stock tidak mencukupi", nil)
+		return
+	}
+
+	findProduct.Qty -= findOrder.Qty
+	_, err = s.service.IProductService.Update(findProduct.Id, findProduct)
+	if err != nil {
+		response.Response(w, http.StatusInternalServerError, response.MsgUpdate(false, HandlerName), nil)
+		return
+	}
+
 	findOrder.OrderStatus = true
 	if _, err := s.service.IOrderService.Update(findOrder.Id, findOrder); err != nil {
 		response.Response(w, http.StatusInternalServerError, response.MsgUpdate(false, HandlerName), nil)
